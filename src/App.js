@@ -1,22 +1,31 @@
 import { useState } from 'react';
-import Square from './Square';
+import Board from './Board';
 import { calculateWinner } from './helper';
 
-export default function Board() {
+export default function Game() {
   const [xIsNext, setXIsNext] = useState(true);
-  const [boardState, setBoardState] = useState(new Array(9).fill(null));
+  const [gameState, setGameState] = useState([new Array(9).fill(null)]);
 
   function handleClick(index) {
-    if (boardState[index] !== null || calculateWinner(boardState)) {
+    if (currentSquares[index] !== null || calculateWinner(currentSquares)) {
       return;
     }
-    const boardStateCopy = [...boardState];
-    boardStateCopy[index] = xIsNext ? "X" : "O";
+    const nextGameState = currentSquares.slice();
+    nextGameState[index] = xIsNext ? "X" : "O";
+    console.log("nextGameState", nextGameState);
     setXIsNext(!xIsNext);
-    setBoardState(boardStateCopy);
+    setGameState([...gameState, nextGameState]);
   }
 
-  const winner = calculateWinner(boardState);
+  function jumpTo(index) {
+    const newGameState = gameState.slice(0, index + 1).map(item => [...item]);
+    setGameState(newGameState);
+    setXIsNext(!!(newGameState.length % 2))
+  }
+
+  const currentSquares = gameState[gameState.length - 1];
+
+  const winner = calculateWinner(currentSquares);
   let status;
   if (winner) {
     status = "Winner: " + winner;
@@ -24,22 +33,23 @@ export default function Board() {
     status = "Next player: " + (xIsNext ? "X" : "O");
   }
 
+  const moves = gameState.map((state, index) => {
+    let description;
+    if (index > 0) {
+      description = "Go to move #" + index;
+    } else {
+      description = "Go to game start";
+    }
+    return <li key={index}>
+      <button onClick={() => jumpTo(index)}>{description}</button>
+    </li>;
+  });
+
   return <>
     <div className="status">{status}</div>
-    <div className="board-row">
-      <Square value={boardState[0]} onClick={(event) => handleClick(0)} />
-      <Square value={boardState[1]} onClick={(event) => handleClick(1)} />
-      <Square value={boardState[2]} onClick={(event) => handleClick(2)} />
-    </div>
-    <div className="board-row">
-      <Square value={boardState[3]} onClick={(event) => handleClick(3)} />
-      <Square value={boardState[4]} onClick={(event) => handleClick(4)} />
-      <Square value={boardState[5]} onClick={(event) => handleClick(5)} />
-    </div>
-    <div className="board-row">
-      <Square value={boardState[6]} onClick={(event) => handleClick(6)} />
-      <Square value={boardState[7]} onClick={(event) => handleClick(7)} />
-      <Square value={boardState[8]} onClick={(event) => handleClick(8)} />
-    </div>
+    <Board boardState={currentSquares} handleClick={handleClick} />
+    <ul>
+      {moves}
+    </ul>
   </>;
 };
